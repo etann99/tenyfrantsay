@@ -1,0 +1,20 @@
+const state={screen:'home',domain:'ALL',search:'',expanded:null};
+const app=document.getElementById('app');
+const domains={RAFITSARY,RAFITRISA,ALIJEBRA,ANTONTAN_ISA};
+const all=[...RAFITSARY.map(x=>({...x,d:'RAFITSARY'})),...RAFITRISA.map(x=>({...x,d:'RAFITRISA'})),...ALIJEBRA.map(x=>({...x,d:'ALIJEBRA'})),...ANTONTAN_ISA.map(x=>({...x,d:"ANTONTAN'ISA"}))];
+const esc=s=>s.replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+function render(){
+if(state.screen==='home') app.innerHTML=`<div class=wrap><h1>MATEMATIKA</h1><div class=menu><button onclick="go('learn')">FIANARANA</button><button onclick="go('practice')">FANAZARANA</button></div></div>`;
+if(state.screen==='learn'){const list=all.filter(t=>(state.domain==='ALL'||t.d===state.domain)&&`${t.mg} ${t.fr} ${t.en}`.toLowerCase().includes(state.search.toLowerCase()));app.innerHTML=`<div class=wrap><h2>FIANARANA</h2><div class=top><select onchange="state.domain=this.value;render()"><option>ALL</option><option>RAFITSARY</option><option>RAFITRISA</option><option>ALIJEBRA</option><option>ANTONTAN'ISA</option></select><input placeholder='Search' oninput="state.search=this.value;render()"></div><div class=grid>${list.map((t,i)=>`<div class=card onclick="state.expanded=${i===state.expanded?'null':i};render()"><b>${esc(t.mg)}</b><div>${esc(t.fr)}</div><small>${esc(t.en||'')}</small><span>${t.d}</span>${t.d==='RAFITSARY'?svgFor(t.mg):''}${state.expanded===i?'<p>Full term card</p>':''}</div>`).join('')}</div><button onclick="go('home')">Back</button></div>`}
+if(state.screen==='practice') app.innerHTML=`<div class=wrap><h2>FANAZARANA</h2><div class=menu><button onclick="startQuiz('geo')">Lazao ny tarehy</button><button onclick="startQuiz('num')">Inona io?</button><button onclick="startQuiz('alg')">Mifanaraka ve?</button></div><button onclick="go('home')">Back</button></div>`;
+}
+function svgFor(m){if(m.includes('faribolana'))return `<svg viewBox='0 0 100 100'><circle cx='50' cy='50' r='30'/></svg>`;if(m.includes('efamira'))return `<svg viewBox='0 0 100 100'><rect x='20' y='20' width='60' height='60'/></svg>`;return `<svg viewBox='0 0 100 100'><polygon points='50,15 85,85 15,85'/></svg>`}
+function go(s){state.screen=s;render()}
+let quiz=null,timer=0,raf;
+function startQuiz(mode){quiz={mode,score:0,lives:3,total:0,correct:0,combo:0,mult:1,seen:[]};nextQ()}
+function nextQ(){if(quiz.lives<=0){end();return;}let pool=quiz.mode==='geo'?RAFITSARY:quiz.mode==='num'?RAFITRISA:[...ALIJEBRA,...GENERAL,...ANTONTAN_ISA];const c=pool[Math.floor(Math.random()*pool.length)];let opts=[c];while(opts.length<4){let r=pool[Math.floor(Math.random()*pool.length)];if(!opts.includes(r))opts.push(r)}opts.sort(()=>Math.random()-.5);quiz.q={c,opts};quiz.total++;timer=20;tick();renderQ()}
+function tick(){cancelAnimationFrame(raf);let last=performance.now();const step=(n)=>{const d=(n-last)/1000;last=n;timer-=d;if(timer<=0){answer(null,true);return;}document.querySelector('.bar')?.style.setProperty('width',`${timer/20*100}%`);raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
+function renderQ(){app.innerHTML=`<div class=wrap><div class=hud>❤️ ${quiz.lives} <span>Score ${quiz.score}</span><span>x${quiz.mult.toFixed(1)}</span></div><div class=timer><div class=bar></div></div><h3>${quiz.mode==='alg'?quiz.q.c.fr:quiz.q.c.mg}</h3><div class=grid opts>${quiz.q.opts.map(o=>`<button onclick="answer('${encodeURIComponent(o.mg)}',false)">${o.mg}</button>`).join('')}</div></div>`}
+function answer(v,timeout){const ok=!timeout&&decodeURIComponent(v)===quiz.q.c.mg;if(ok){quiz.combo++;if(quiz.combo>=3)quiz.mult=1.5;quiz.score+=Math.round(100*quiz.mult);quiz.correct++;}else{quiz.combo=0;quiz.mult=1;quiz.lives--;}quiz.seen.push(quiz.q.c);setTimeout(nextQ,400)}
+function end(){cancelAnimationFrame(raf);const acc=Math.round((quiz.correct/Math.max(1,quiz.total))*100);app.innerHTML=`<div class=wrap><h2>Vita!</h2><p>Score ${quiz.score}</p><p>${quiz.correct}/${quiz.total} (${acc}%)</p><button onclick="startQuiz('${quiz.mode}')">Retry</button><button onclick="go('home')">Menu</button></div>`}
+render();
